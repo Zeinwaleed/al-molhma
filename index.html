@@ -134,7 +134,7 @@
       const data = await res.json();
 
       if (!data.values) {
-        document.getElementById("output").innerHTML = "❌ فشل في قراءة البيانات.";
+        document.getElementById("output").innerHTML = " فشل في قراءة البيانات.";
         return;
       }
 
@@ -144,7 +144,7 @@
       const row = rows.find(r => r[emailIndex]?.toLowerCase() === email.toLowerCase());
 
       if (!row) {
-        document.getElementById("output").innerHTML = "❗ لا توجد بيانات لهذا البريد.";
+        document.getElementById("output").innerHTML = " لا توجد بيانات لهذا البريد.";
         return;
       }
 
@@ -198,7 +198,7 @@
 
     } catch (error) {
       console.error(error);
-      document.getElementById("output").innerHTML = "❌ حدث خطأ أثناء تحميل البيانات.";
+      document.getElementById("output").innerHTML = " حدث خطأ أثناء تحميل البيانات.";
     }
   }
 </script>
