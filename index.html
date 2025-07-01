@@ -111,7 +111,8 @@
     </div>
   </div>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
   const SHEET_ID = "12EyGP9TnIYHZi1R8bbJstkWcOk4vT7oBr_HEDKSQ4o0";
@@ -145,7 +146,7 @@
         return;
       }
 
-      let html = `<h3>✅ بياناتك:</h3><table border='1' style='border-collapse:collapse;width:100%'>`;
+      let html = `<div id="print-section"><h3>✅ بياناتك:</h3><table border='1' style='border-collapse:collapse;width:100%; direction: rtl;'>`;
 
       headers.forEach((header, i) => {
         let value = row[i] || '';
@@ -155,26 +156,26 @@
         html += `<tr><th style="background:#eee;text-align:right;padding:6px">${header}</th><td style="padding:6px">${value}</td></tr>`;
       });
 
-      html += "</table>";
+      html += "</table></div>";
       document.getElementById("output").innerHTML = html;
 
-      // تحميل PDF باستخدام jsPDF
+      // توليد صورة من العنصر
+      const element = document.getElementById("print-section");
+      const canvas = await html2canvas(element, { scale: 2 });
+
+      const imgData = canvas.toDataURL("image/png");
+
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4"
-      });
+      const pdf = new jsPDF('p', 'pt', 'a4');
 
-      // تحويل البيانات إلى نص PDF بسيط
-      let pdfText = `بياناتك\n\n`;
-      headers.forEach((header, i) => {
-        let value = row[i] || '';
-        pdfText += `${header}: ${value}\n`;
-      });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      doc.text(pdfText, 40, 50);
-      doc.save("بياناتي.pdf");
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+      pdf.save("بياناتي.pdf");
 
     } catch (error) {
       console.error(error);
@@ -182,5 +183,6 @@
     }
   }
 </script>
+
 </body>
 </html>
