@@ -111,60 +111,76 @@
     </div>
   </div>
 
-  <script>
-    const SHEET_ID = "12EyGP9TnIYHZi1R8bbJstkWcOk4vT7oBr_HEDKSQ4o0";
-    const API_KEY = "AIzaSyA0QnWb8rp1A7yJYhbijloFsSdFMwC7CfY";
-    const SHEET_NAME = "form!A1:Z1000";
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    async function getUserData() {
-      const email = document.getElementById("searchEmail").value.trim();
-      if (!email) {
-        alert("رجاءً أدخل بريدك الإلكتروني");
+<script>
+  const SHEET_ID = "12EyGP9TnIYHZi1R8bbJstkWcOk4vT7oBr_HEDKSQ4o0";
+  const API_KEY = "AIzaSyA0QnWb8rp1A7yJYhbijloFsSdFMwC7CfY";
+  const SHEET_NAME = "form!A1:Z1000";
+
+  async function getUserData() {
+    const email = document.getElementById("searchEmail").value.trim();
+    if (!email) {
+      alert("رجاءً أدخل بريدك الإلكتروني");
+      return;
+    }
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.values) {
+        document.getElementById("output").innerHTML = "❌ فشل في قراءة البيانات.";
         return;
       }
 
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
+      const headers = data.values[0];
+      const rows = data.values.slice(1);
+      const emailIndex = headers.indexOf("الايميل");
+      const row = rows.find(r => r[emailIndex]?.toLowerCase() === email.toLowerCase());
 
-        if (!data.values) {
-          document.getElementById("output").innerHTML = " فشل في قراءة البيانات.";
-          return;
-        }
-
-        const headers = data.values[0];
-        const rows = data.values.slice(1);
-        const emailIndex = headers.indexOf("الايميل");
-        const row = rows.find(r => r[emailIndex]?.toLowerCase() === email.toLowerCase());
-
-        if (!row) {
-          document.getElementById("output").innerHTML = " لا توجد بيانات لهذا البريد.";
-          return;
-        }
-
-        let html = `<div id="print-section"><h3> بيناتك</h3><table border='1' style='border-collapse:collapse;width:100%'>`;
-
-        headers.forEach((header, i) => {
-          let value = row[i] || '';
-          if (typeof value === 'string' && value.startsWith('http')) {
-            value = `<a href="${value}" target="_blank">اضغط هنا</a>`;
-          }
-          html += `<tr><th style="background:#eee;text-align:right;padding:6px">${header}</th><td style="padding:6px">${value}</td></tr>`;
-        });
-
-        html += "</table></div>";
-
-        document.getElementById("output").innerHTML = html;
-
-        // ✅ فتح نافذة الطباعة تلقائيًا بعد عرض الجدول
-        setTimeout(() => window.print(), 500);
-
-      } catch (error) {
-        console.error(error);
-        document.getElementById("output").innerHTML = "❌ حدث خطأ أثناء تحميل البيانات.";
+      if (!row) {
+        document.getElementById("output").innerHTML = "❗ لا توجد بيانات لهذا البريد.";
+        return;
       }
+
+      let html = `<h3>✅ بياناتك:</h3><table border='1' style='border-collapse:collapse;width:100%'>`;
+
+      headers.forEach((header, i) => {
+        let value = row[i] || '';
+        if (typeof value === 'string' && value.startsWith('http')) {
+          value = `<a href="${value}" target="_blank">اضغط هنا</a>`;
+        }
+        html += `<tr><th style="background:#eee;text-align:right;padding:6px">${header}</th><td style="padding:6px">${value}</td></tr>`;
+      });
+
+      html += "</table>";
+      document.getElementById("output").innerHTML = html;
+
+      // تحميل PDF باستخدام jsPDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4"
+      });
+
+      // تحويل البيانات إلى نص PDF بسيط
+      let pdfText = `بياناتك\n\n`;
+      headers.forEach((header, i) => {
+        let value = row[i] || '';
+        pdfText += `${header}: ${value}\n`;
+      });
+
+      doc.text(pdfText, 40, 50);
+      doc.save("بياناتي.pdf");
+
+    } catch (error) {
+      console.error(error);
+      document.getElementById("output").innerHTML = "❌ حدث خطأ أثناء تحميل البيانات.";
     }
-  </script>
+  }
+</script>
 </body>
 </html>
