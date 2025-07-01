@@ -111,78 +111,80 @@
     </div>
   </div>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- مكتبات html2canvas و jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<script>
-  const SHEET_ID = "12EyGP9TnIYHZi1R8bbJstkWcOk4vT7oBr_HEDKSQ4o0";
-  const API_KEY = "AIzaSyA0QnWb8rp1A7yJYhbijloFsSdFMwC7CfY";
-  const SHEET_NAME = "form!A1:Z1000";
+  <script>
+    const SHEET_ID = "12EyGP9TnIYHZi1R8bbJstkWcOk4vT7oBr_HEDKSQ4o0";
+    const API_KEY = "AIzaSyA0QnWb8rp1A7yJYhbijloFsSdFMwC7CfY";
+    const SHEET_NAME = "form!A1:Z1000";
 
-  async function getUserData() {
-    const email = document.getElementById("searchEmail").value.trim();
-    if (!email) {
-      alert("رجاءً أدخل بريدك الإلكتروني");
-      return;
-    }
-
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!data.values) {
-        document.getElementById("output").innerHTML = "❌ فشل في قراءة البيانات.";
+    async function getUserData() {
+      const email = document.getElementById("searchEmail").value.trim();
+      if (!email) {
+        alert("رجاءً أدخل بريدك الإلكتروني");
         return;
       }
 
-      const headers = data.values[0];
-      const rows = data.values.slice(1);
-      const emailIndex = headers.indexOf("الايميل");
-      const row = rows.find(r => r[emailIndex]?.toLowerCase() === email.toLowerCase());
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
 
-      if (!row) {
-        document.getElementById("output").innerHTML = "❗ لا توجد بيانات لهذا البريد.";
-        return;
-      }
-
-      let html = `<div id="print-section"><h3>✅ بياناتك:</h3><table border='1' style='border-collapse:collapse;width:100%; direction: rtl;'>`;
-
-      headers.forEach((header, i) => {
-        let value = row[i] || '';
-        if (typeof value === 'string' && value.startsWith('http')) {
-          value = `<a href="${value}" target="_blank">اضغط هنا</a>`;
+        if (!data.values) {
+          document.getElementById("output").innerHTML = "❌ فشل في قراءة البيانات.";
+          return;
         }
-        html += `<tr><th style="background:#eee;text-align:right;padding:6px">${header}</th><td style="padding:6px">${value}</td></tr>`;
-      });
 
-      html += "</table></div>";
-      document.getElementById("output").innerHTML = html;
+        const headers = data.values[0];
+        const rows = data.values.slice(1);
+        const emailIndex = headers.indexOf("الايميل");
+        const row = rows.find(r => r[emailIndex]?.toLowerCase() === email.toLowerCase());
 
-      // توليد صورة من العنصر
-      const element = document.getElementById("print-section");
-      const canvas = await html2canvas(element, { scale: 2 });
+        if (!row) {
+          document.getElementById("output").innerHTML = "❗ لا توجد بيانات لهذا البريد.";
+          return;
+        }
 
-      const imgData = canvas.toDataURL("image/png");
+        // بناء جدول HTML للعرض
+        let html = `<div id="print-section"><h3>✅ بياناتك:</h3><table><tbody>`;
 
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'pt', 'a4');
+        headers.forEach((header, i) => {
+          let value = row[i] || '';
+          if (typeof value === 'string' && value.startsWith('http')) {
+            value = `<a href="${value}" target="_blank" rel="noopener noreferrer">اضغط هنا</a>`;
+          }
+          html += `<tr><th>${header}</th><td>${value}</td></tr>`;
+        });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+        html += `</tbody></table></div>`;
+        document.getElementById("output").innerHTML = html;
 
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        // توليد PDF من الصورة
+        const element = document.getElementById("print-section");
+        const canvas = await html2canvas(element, { scale: 2 });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-      pdf.save("بياناتي.pdf");
+        const imgData = canvas.toDataURL("image/png");
 
-    } catch (error) {
-      console.error(error);
-      document.getElementById("output").innerHTML = "❌ حدث خطأ أثناء تحميل البيانات.";
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        pdf.save("بياناتي.pdf");
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById("output").innerHTML = "❌ حدث خطأ أثناء تحميل البيانات.";
+      }
     }
-  }
-</script>
+  </script>
 
 </body>
 </html>
